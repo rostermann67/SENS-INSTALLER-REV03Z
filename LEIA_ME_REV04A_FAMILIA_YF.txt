@@ -1,0 +1,55 @@
+# INSTALLER Rev.04A — Família YF no catálogo
+
+11/11/2026 • Compatível com firmware Rev.03Q e Platform V3.3.0 R8B da entrega anterior.
+
+## O que mudou
+
+A caixa do catálogo agora se chama **Família YF**. Marque a família e informe a quantidade: 1 cria um cartão de configuração, 2 criam dois, e assim por diante, dentro da capacidade disponível. Não é necessário clicar em criar instâncias nem abrir os CUSTOMIZADOS.
+
+Cada cartão contém ID permanente visível, modelo (YF-B7 ou YF-S201), GPIO editável, calibração individual em pulsos por litro e janela de leitura. Os GPIOs sugeridos levam em conta os sensores habilitados no formulário. A validação continua bloqueando conflitos antes de guardar/gravar.
+
+A seleção **Modelo para novas unidades** define apenas o modelo das unidades que forem acrescentadas. Para mudar uma unidade existente, use o seletor no cartão dela. Alterar o modelo de uma unidade redefine sua referência de pulsos/L: confira e ajuste a calibração antes de gravar. Os demais cartões não são alterados.
+
+- YF-B7: f = 11 × Q, com f em Hz e Q em L/min, corresponde a **660 pulsos/L**.
+- YF-S201: referência editável de **450 pulsos/L**.
+- A saída permanece vazão instantânea em L/min. O ±3% informado para o YF-B7 não foi verificado em hardware nesta entrega.
+
+## Desativar, restaurar e remover
+
+- Reduzir a quantidade desativa as unidades excedentes, preservando seus IDs, GPIOs, modelos e calibrações.
+- Aumentar novamente restaura essas mesmas unidades antes de criar outras.
+- Desmarcar **Família YF** desativa todas as suas unidades na configuração. Marcar novamente restaura a quantidade e os parâmetros anteriores.
+- Unidades desativadas preservadas continuam reservando capacidade. Para liberar espaço, abra **Unidades desativadas preservadas** e use **REMOVER CONFIGURAÇÃO**. A confirmação informa que os parâmetros locais serão descartados. O histórico na Platform permanece; o INSTALLER não reutiliza automaticamente o ID removido enquanto sua sequência local estiver preservada.
+- Essas mudanças só chegam ao equipamento depois de **guardar**, **gravar pela Etapa 3** e **reiniciar o ESP32**. O firmware Rev.03Q mantém a aquisição customizada suspensa até reiniciar após COMMIT.
+
+## Separação entre catálogo e CUSTOMIZADOS
+
+As unidades pertencentes à Família YF aparecem apenas na caixa dessa família. Seus formulários internos não ficam duplicados em CUSTOMIZADOS. No espelho da configuração, também são identificadas como Família YF.
+
+Um YF configurado manualmente como customizado, com ID próprio, continua em CUSTOMIZADOS: o nome/modelo sozinho não muda sua origem. O preenchimento salvo da Rev.03Z é migrado para a Família YF quando foi criado pelo catálogo (`VAZAO_nn` ou o perfil legado `S_YF201`). Os IDs e parâmetros são preservados. Configurações legadas sem identificação por instância continuam legadas; esta revisão de interface não reescreve o histórico científico.
+
+A capacidade técnica continua compartilhada entre as interfaces do firmware Rev.03Q: oito entradas de aquisição configuráveis. A separação visual não aumenta esse limite e não sobrescreve sensores existentes para atender um aumento de quantidade.
+
+## Instalar a revisão
+
+1. Baixe **SENS_INSTALLER_REV04A_FAMILIA_YF_FW_REV03Q_COPIAR_COLAR.zip**.
+2. Extraia todos os arquivos em uma pasta vazia e publique via HTTPS, mantendo a estrutura. A raiz contém `index.html`, `sens-improv.js`, os dois manifestos, instruções e a pasta `firmware/`.
+3. A página carrega o componente de gravação esp-web-tools pela internet. Para USB, use Chrome ou Edge com Web Serial.
+4. Se o ESP32 já está com **Rev.03Q**, esta revisão não exige gravar firmware novamente. Os binários são idênticos aos do pacote anterior, e a Platform **R8B** continua compatível.
+5. Se ainda está com firmware anterior, atualize para Rev.03Q. Para conservar dados no ESP32 clássico de 4 MB com o esquema da entrega anterior, escolha **PRESERVAR DADOS** e não selecione apagar o dispositivo. O manifesto preservador grava somente a aplicação em `0x10000`. **DO ZERO** usa imagem completa e pode apagar NVS e buffer.
+6. Selecione a quantidade na Família YF, confira cada GPIO/calibração, guarde, grave e reinicie. Na Platform R8B, confira os canais e sua autorização na MATRIZ. Os rótulos científicos continuam editáveis em GRANDEZAS_PROJETO.
+
+A configuração salva no navegador pertence à origem da página: outra pasta no mesmo domínio compartilha o localStorage; outro domínio não recebe esse preenchimento automaticamente. Evite salvar configurações concorrentes nas páginas antiga e nova. Esta revisão preserva a chave local da versão anterior para permitir restauração.
+
+## Escopo desta revisão
+
+Esta alteração reorganiza somente o INSTALLER. DHT22 e os demais drivers nativos ainda não receberam a configuração de múltiplas instâncias e GPIOs livres. O DS18B20 mantém o funcionamento legado. Essa evolução permanece para uma próxima etapa.
+
+## Validação
+
+- 12 verificações de interface no Chromium: quantidades 1/2/3, campos no catálogo, ausência de duplicidade em CUSTOMIZADOS, configurações por unidade, gravação com um único sensor, restauração, redução/reativação, desativação da família, liberação explícita, migração e capacidade insuficiente.
+- Verificações do protocolo serial com comunicação simulada: oito blocos na gravação e snapshot, schema 19, snapshot incompleto rejeitado e firmware antigo bloqueado antes de escrever identidade. Os handlers e a estrutura de transmissão permanecem compatíveis com Rev.03Q.
+- Sintaxe JavaScript conferida; caminhos dos manifestos e hashes dos binários conferidos.
+- Sem ESP32/sensores físicos conectados e sem implantação em uma planilha Google real. O teste físico dos três medidores permanece necessário.
+
+Os testes e resultados estão na pasta `validacao/` desta entrega. O ZIP contém somente o INSTALLER completo e os binários, sem arquivos de teste necessários à hospedagem.
