@@ -1,0 +1,74 @@
+# Correção de gravação — firmware Rev.03R / INSTALLER Rev.04B
+
+11/11/2026. Base: firmware Rev.03Q e INSTALLER Rev.04A Família YF. Platform compatível: V3.3.0 R8B, sem alteração nesta entrega.
+
+## Erros relatados
+
+- `Tempo esgotado aguardando ACK serial Rev.15D2.3`.
+- `SENS15D|ERR|COMMIT|FALHA_READBACK_NVS:7F8CCCBE/A66E0242`.
+
+O segundo erro significa que o estado relido da NVS difere do estado em RAM após a tentativa de gravação. Os hashes dependem de toda a configuração; não identificam sozinhos um campo específico. Foram reproduzidos dois defeitos do código compatíveis com as falhas das imagens. O estado físico do equipamento do usuário não foi lido neste ambiente.
+
+## O que foi corrigido
+
+### Armazenamento dos oito canais
+
+A Rev.03Q gravava dezenas de chaves por entrada, inclusive todos os parâmetros padrão dos canais desativados. No core ESP32 utilizado, `Preferences::putFloat` armazena um blob. Cada float, apesar de ter quatro bytes, consome várias entradas da NVS. O gravador também ignorava os resultados individuais dessas escritas.
+
+Na simulação limitada a 504 entradas lógicas, o gravador antigo retornou sucesso com 117 escritas rejeitadas por falta de espaço. A releitura divergiu. A simulação anterior, sem esse limite, não detectava o problema.
+
+A Rev.03R usa uma representação textual compacta por canal, dentro da mesma namespace de configuração. Cada gravação compacta verifica o número de bytes e relê o valor antes de atualizar a configuração em RAM. O formato de transporte, o snapshot e a identificação dos canais não mudaram.
+
+Para recuperar espaço durante a migração, a rotina remove **apenas floats legados cujo valor é exatamente igual ao padrão usado pelo leitor**. Ler depois da remoção produz o mesmo valor. Parâmetros não padrão, IDs, GPIOs, calibrações e canais desativados são preservados. A representação antiga de um canal só é removida depois de sua representação compacta ter sido gravada e conferida. Não há `nvs_flash_erase`, limpeza global de NVS, limpeza de namespace, formatação de LittleFS ou remoção do buffer científico.
+
+A integridade continua sendo exigida: se houver falha real de espaço/escrita, a configuração não é declarada válida. O diagnóstico de divergência informa agora os blocos afetados (`B`, `A`, `G0`…`G7`, `C0`, `C1`) sem expor valores. O marcador final também tem sua gravação/releitura conferida.
+
+Na simulação integrada, com RuntimeConfig, AdvancedRuntimeConfig, GenericRuntimeConfig, CorrectionManager e FullConfigTransaction reais, configurações de 1, 3 e 8 sensores passaram no COMMIT com uso de 224 das 504 entradas modeladas. Esses números são do simulador, não uma medição de flash do ESP32 do usuário. O simulador não reproduz toda a coleta de lixo, desgaste ou falhas elétricas da NVS física.
+
+### Recepção serial fragmentada
+
+Na versão anterior, o Improv deixava passar o início ASCII `@`, mas podia consumir a continuação da mensagem no loop seguinte se os bytes chegassem em trechos. O parser ASCII ficava esperando uma mensagem incompleta e o navegador não recebia ACK.
+
+O parser ASCII agora mantém a propriedade de uma linha parcial até o fim da linha. O Improv recebe novamente após sua conclusão. A regressão reproduziu a perda com o roteamento antigo e verificou a correção em todos os pontos de corte de um comando BEGIN, além de uma mensagem UTF-8 entregue byte a byte.
+
+O loop principal atende a configuração serial antes da aquisição e do tráfego de rede. Enquanto a transação está ativa e após COMMIT até reiniciar, a coleta/envio ficam suspensos; isso evita bloqueios HTTP entre os comandos e mistura de configurações. Pacotes já preservados continuam no buffer, para retomada após reiniciar.
+
+O BEGIN pode aguardar até 60 segundos para acomodar um eventual boot/reabertura USB com Wi-Fi. Os demais ACKs têm prazo de 15 segundos e o erro identifica o comando que não foi confirmado. Não há repetição automática cega de gravações ou COMMIT.
+
+## Como atualizar o equipamento com erro
+
+1. Publique **todo o conteúdo** do ZIP `SENS_INSTALLER_REV04B_FW_REV03R_NVS_SERIAL_COPIAR_COLAR.zip` na hospedagem HTTPS, mantendo os caminhos. Depois recarregue a página, verificando **Rev.04B / Rev.03R** no cabeçalho. Os novos manifestos, nomes de binários e versão do módulo JS evitam reutilizar os arquivos anteriores por cache.
+2. Na Etapa 2, escolha **ATUALIZAR — PRESERVAR DADOS** e não selecione apagar o dispositivo. Isso grava somente a aplicação em `0x10000`. A tabela de partições foi conferida byte a byte com a Rev.03Q: é idêntica.
+3. Confira a configuração desejada. A Família YF continua com quantidade, modelo, GPIO e calibração por unidade, sem abrir CUSTOMIZADOS.
+4. Guarde e execute a Etapa 3 novamente. O firmware Rev.03Q é bloqueado pelo INSTALLER Rev.04B antes da gravação de identidade, pois não anuncia `configStorage=packed-v2`. É necessário instalar a **Rev.03R**, não apenas substituir o HTML.
+5. Espere a confirmação de COMMIT, snapshot e fingerprint. Configure Wi-Fi se necessário e **reinicie o ESP32** para aplicar e retomar a operação.
+
+A correção não modifica a Platform R8B. Ela também não considera concluída uma Etapa 3 que terminou em erro na versão anterior. Confira os campos desejados antes de gravar novamente: a transação anterior pode ter persistido somente parte deles.
+
+**DO ZERO não é necessário para esta correção.** A imagem completa é mantida no pacote para novas instalações e pode apagar configurações e buffer. Não use essa opção para tentar contornar o erro de gravação.
+
+## Compatibilidade e limites
+
+- Imagem para ESP32 clássico, flash 4 MB, DIO 80 MHz e esquema `no_ota` da entrega anterior.
+- Identidade, modelo de canais, oito entradas configuráveis e schema 19 do protocolo preservados.
+- Após a migração, versões antigas de firmware que ignoram a representação compacta não leem a configuração nova dos canais. Para voltar a uma versão antiga, é preciso reconfigurá-la; simplesmente trocar o binário não restaura a representação anterior.
+- O COMMIT usa gravações sequenciais, não rollback completo. Uma falha não é tratada como sucesso; só a confirmação integral autoriza considerar a configuração concluída.
+- Melhorias de menus recolhíveis e múltiplas instâncias dos drivers nativos continuam pendentes; não foram misturadas a esta correção.
+
+## Verificação realizada
+
+- Compilação real com Arduino CLI 1.3.1 e core ESP32 3.3.12; tamanhos em `validacao/build-result.json`.
+- Regressão do limite de NVS: reprodução da falha antiga, limpeza de defaults sem alteração dos valores, migração dos oito canais e falha de espaço explicitamente reportada.
+- Integração dos cinco gerenciadores reais com NVS simulada limitada: 1, 3 e 8 sensores, com releitura e fingerprint.
+- Regressão do parser ASCII real e das funções de roteamento Improv: fragmentação em todos os pontos de BEGIN, UTF-8 byte a byte e retorno ao Improv ao terminar a linha.
+- Testes de aquisição de pulsos e persistência existentes, usando o novo armazenamento.
+- 12 verificações da Família YF no Chromium e 14 do protocolo/guardas/tempos de ACK, com Web Serial simulado.
+- Verificação sintática do JavaScript, caminhos dos manifestos, integridade dos ZIPs, identidade das partições e comparação das fontes compiladas com as fontes entregues.
+
+Não foi conectado um ESP32 físico nem executada uma planilha Google nesta validação. A confirmação final depende de repetir a Etapa 3 e testar a aquisição no equipamento do usuário.
+
+## Conteúdo
+
+- ZIP do INSTALLER: página completa, JavaScript, manifestos, instruções e os binários novos.
+- ZIP fonte: sketch completo `firmware/firmware.ino`, testes, fakes e logs.
+- `validacao/`: resultados e scripts para inspeção. A reprodução C++ usa `python tests/run_host.py` e `python tests/run_regressions.py` na raiz do pacote fonte, com g++ disponível. Os testes de navegador requerem Python Playwright e Chromium; os scripts na raiz do pacote fonte usam a pasta `installer/` com o conteúdo do ZIP do INSTALLER extraído.
