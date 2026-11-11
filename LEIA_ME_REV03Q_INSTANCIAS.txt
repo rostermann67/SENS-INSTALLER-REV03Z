@@ -1,0 +1,9 @@
+INSTALLER Rev.03Z / firmware Rev.03Q — ESP32 clássico, 4 MB.
+
+Copie todos os arquivos mantendo a estrutura. Consulte README.md do pacote completo.
+YF-B7: f=11Q -> 660 pulsos/L; crie 3 instâncias e confira GPIO/calibração.
+Atualize a Platform R8B antes de transmitir canais por instância.
+Após gravar configuração e Wi-Fi, reinicie o ESP32 para ativar aquisição.
+PRESERVAR grava somente aplicação 0x10000. Não selecione apagar dispositivo.
+DO ZERO usa imagem completa e pode apagar configurações e buffer.
+Sem teste físico de ESP32/sensores nesta entrega.
