@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SENS Installer NEXT — Distribuição Rev.04B Instâncias | Firmware Rev.03R</title>
+<title>SENS Installer NEXT — Distribuição Rev.04A DS por ROM | Firmware Rev.03R</title>
 <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
 <style>
 :root{font-family:Arial,sans-serif;color:#152019;background:#f4f6f5}
@@ -46,7 +46,6 @@ details.config-group>summary{font-weight:800;color:#176b3a;cursor:pointer}
 .password-wrap input{flex:1}
 .eye-btn{width:46px;min-width:46px;padding:10px 8px;font-size:1.05rem;line-height:1}
 
-.sensorbox[hidden]{display:none!important}
 .generic-layer{border:1px solid #dce7e0;border-radius:10px;margin:12px 0;padding:12px;background:#fff}
 .generic-layer h3{margin:0 0 10px;font-size:1rem;color:#176b3a}
 .generic-layer label[hidden]{display:none!important}
@@ -55,7 +54,7 @@ details.config-group>summary{font-weight:800;color:#176b3a;cursor:pointer}
 </style>
 </head>
 <body>
-<header><h1>SENS INSTALLER NEXT</h1><div>Instalação e configuração de equipamentos SENS</div><div style="margin-top:7px;font-size:.9rem;opacity:.9">Distribuição Rev.04B Instâncias • Firmware SENS NEXT Universal Rev.03R</div></header>
+<header><h1>SENS INSTALLER NEXT</h1><div>Instalação e configuração de equipamentos SENS</div><div style="margin-top:7px;font-size:.9rem;opacity:.9">Distribuição Rev.04A DS por ROM • Firmware SENS NEXT Universal Rev.03R</div></header>
 <main>
 <section class="card" id="preconfigCard">
 <div class="step">ETAPA 1 — CONFIGURAÇÃO DO EQUIPAMENTO</div><h2>Configure o SENS antes de instalar</h2>
@@ -80,17 +79,20 @@ details.config-group>summary{font-weight:800;color:#176b3a;cursor:pointer}
 <label class="checkitem catalog-item"><input type="checkbox" id="s_thermok"><span class="catalog-text"><span class="catalog-model">Termopar K</span><span class="catalog-qty">Temperatura</span></span></label>
 <label class="checkitem catalog-item"><input type="checkbox" id="s_gps"><span class="catalog-text"><span class="catalog-model">GPS</span><span class="catalog-qty">Posição</span></span></label>
 <label class="checkitem catalog-item"><input type="checkbox" id="s_t6613"><span class="catalog-text"><span class="catalog-model">T6613</span><span class="catalog-qty">CO₂</span></span></label>
-<label class="checkitem catalog-item"><input type="checkbox" id="s_yfs201"><span class="catalog-text"><span class="catalog-model">Família YF</span><span class="catalog-qty">YF-B7 • YF-S201</span></span></label>
-<label class="catalog-item" style="display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:5px;padding:9px 12px"><span class="catalog-text"><span class="catalog-model">DS18B20</span><span class="catalog-qty">Temperatura</span></span><select id="dsMode" style="width:100%"><option value="0">DESATIVADO</option><option value="1">1 sensor</option><option value="2">2 sensores</option><option value="3">AUTO</option></select></label>
+<label class="checkitem catalog-item"><input type="checkbox" id="s_yfs201"><span class="catalog-text"><span class="catalog-model">VAZÃO POR PULSOS</span><span class="catalog-qty">YF-B7 • YF-S201</span></span></label>
+<label class="catalog-item" style="display:flex;flex-direction:column;align-items:stretch;justify-content:center;gap:5px;padding:9px 12px"><span class="catalog-text"><span class="catalog-model">DS18B20</span><span class="catalog-qty">Temperatura</span></span><select id="dsMode" style="width:100%"><option value="0">DESATIVADO</option><option value="1">1 sensor</option><option value="2">2 sensores</option><option value="3">AUTO — até 8 DS, número fixo por ROM</option></select></label>
+<p class="smallnote" style="grid-column:1/-1">DS18B20: use AUTO para 3 a 8 sondas no GPIO13. Os números ficam vinculados à ROM após o primeiro reinício. Para atribuir DS #1 à sonda interna, faça o primeiro reinício só com ela; depois desligue, conecte a externa e reinicie. Sondas ausentes mantêm seu número reservado.</p>
 </div>
 <div id="yf_cfg" class="sensorbox" style="display:none;margin-top:12px">
  <div class="config-grid">
- <label>Modelo para novas unidades<select id="yf_model"><option value="YF-B7">YF-B7 — f = 11 × Q</option><option value="YF-S201">YF-S201 — 450 pulsos/L</option></select></label>
- <label>Quantidade de sensores<input id="yf_count" type="number" min="1" max="8" step="1" value="1"></label>
+ <label>Modelo<select id="yf_model"><option value="YF-B7">YF-B7 — f = 11 × Q</option><option value="YF-S201">YF-S201 — referência 450 pulsos/L</option></select></label>
+ <label>Quantidade total desejada<input id="yf_count" type="number" min="1" max="8" value="3"></label>
+ <label>Pulsos por litro<input id="yf_ppu" type="number" min="0.001" step="any" value="660"></label>
+ <label>Janela de leitura (ms)<input id="yf_pwin" type="number" min="100" max="65535" value="1000"></label>
  </div>
- <p class="smallnote">Configure cada unidade aqui. GPIOs são sugeridos e podem ser alterados. A calibração é individual: YF-B7 = 660 pulsos/L; YF-S201 = 450 pulsos/L como referência editável.</p>
- <div id="yf_instances"></div>
- <p class="smallnote">Reduzir a quantidade ou desmarcar Família YF desativa as unidades correspondentes na configuração. Seus IDs e parâmetros são guardados para reativação. Para liberar capacidade para outro sensor, remova explicitamente a configuração de uma unidade desativada. Guarde, grave e reinicie o ESP32 para aplicar.</p>
+ <button type="button" id="yf_create">CRIAR INSTÂNCIAS DE VAZÃO</button>
+ <p class="smallnote">YF-B7: f(Hz) = 11 × Q(L/min) → 660 pulsos/L. Ajuste a calibração de cada unidade nos campos abaixo. Cada sensor usa um GPIO separado, com sinal compatível com 3,3 V.</p>
+ <p class="smallnote">As instâncias são acrescentadas nos slots livres. IDs existentes não são renumerados. Para remover uma unidade, desative seu slot; o histórico permanece.</p>
  <div id="yf_status" class="status"></div>
 </div>
 <div class="smallnote">Catálogo = conveniência. Instrumentos fora do catálogo entram por INTERFACE / DRIVER ou CONVERSOR.</div></fieldset>
@@ -153,9 +155,9 @@ details.config-group>summary{font-weight:800;color:#176b3a;cursor:pointer}
 <label>Termopar K ms<input id="i_th" value="2000"></label><label>GPS ms<input id="i_gps" value="1000"></label></div></details>
 <details class="config-group"><summary>Mapa de pinos / recursos</summary><div class="pinmap" style="margin-top:12px">
 <div><b>GPIO4</b> DHT22</div><div><b>GPIO13</b> DS18B20</div><div><b>GPIO35</b> T6613 ADC</div><div><b>GPIO16/17</b> T6613 UART</div>
-<div><b>GPIO21/22</b> I²C compartilhado</div><div><b>GPIO18/5/19</b> MAX6675</div><div><b id="yfPinMap">GPIO23</b> Família YF (GPIOs configurados acima)</div><div><b>0x48</b> ADS1115</div><div><b>0x23</b> BH1750</div><div><b>0x39</b> APDS9960</div><div><b>0x68</b> RTC DS3231 (opcional)</div></div>
+<div><b>GPIO21/22</b> I²C compartilhado</div><div><b>GPIO18/5/19</b> MAX6675</div><div><b id="yfPinMap">GPIO23</b> YF-S201 (quando ativo)</div><div><b>0x48</b> ADS1115</div><div><b>0x23</b> BH1750</div><div><b>0x39</b> APDS9960</div><div><b>0x68</b> RTC DS3231 (opcional)</div></div>
 <div id="pinWarnings" class="warn">Mapa ativo. Conflitos de GPIO dos customizados serão sinalizados.</div></details>
-<details class="config-group" open><summary>SENSORES CUSTOMIZADOS — 8 instâncias configuráveis</summary><p class="smallnote"><b>GENERIC_SENSOR V1 + NTC Beta — formulário por interface:</b> configure sensores que não existem no catálogo usando motores já incorporados ao firmware. Selecione a interface para exibir somente os parâmetros correspondentes. O firmware não identifica o sensor pelo nome/modelo.</p><p class="smallnote">Os sensores da Família YF são configurados na caixa do catálogo acima e não aparecem duplicados aqui. Desativar uma unidade da família preserva seus parâmetros para reativação.</p><div id="genericSlots"></div></details>
+<details class="config-group" open><summary>SENSORES CUSTOMIZADOS — 8 instâncias configuráveis</summary><p class="smallnote"><b>GENERIC_SENSOR V1 + NTC Beta — formulário por interface:</b> configure sensores que não existem no catálogo usando motores já incorporados ao firmware. Selecione a interface para exibir somente os parâmetros correspondentes. O firmware não identifica o sensor pelo nome/modelo.</p><div id="genericSlots"></div></details>
 <details class="config-group"><summary>Correção metrológica — y = a × x + b</summary><p class="smallnote">2 correções metrológicas disponíveis. Escolha o sensor/canal habilitado e depois a grandeza. Vale para sensores nativos e customizados. Linhas OFF e vazias são ignoradas.<br><b>Separador decimal:</b> use ponto (.) nos coeficientes, por exemplo <b>a = 1.0234</b> e <b>b = -12.5</b>. Não use vírgula.</p><div id="correctionSlots"></div></details>
 <div class="actions"><button id="save">GUARDAR CONFIGURAÇÃO</button><button id="newConfig" type="button">NOVA CONFIGURAÇÃO / LIMPAR CAMPOS</button></div><div id="saved" class="status">Preencha e guarde a configuração antes da instalação.</div>
 </section>
@@ -164,8 +166,8 @@ details.config-group>summary{font-weight:800;color:#176b3a;cursor:pointer}
 <div class="step">ETAPA 2 — INSTALAÇÃO</div><h2>Instale o SENS</h2>
 <p class="note">O Wi‑Fi automático do ESP Web Tools está desativado nesta versão. Terminada a instalação, use a Etapa 3: ela grava automaticamente o Nome + Serial já salvos e, na mesma conexão USB, segue para a rede.</p>
 <div class="actions">
-<esp-web-install-button manifest="manifest-next-rev03r-nvs-serial-do-zero.json"><button slot="activate">INSTALAR SENS DO ZERO</button></esp-web-install-button>
-<esp-web-install-button manifest="manifest-next-rev03r-nvs-serial-preservar.json"><button slot="activate">ATUALIZAR — PRESERVAR DADOS</button></esp-web-install-button>
+<esp-web-install-button manifest="manifest-next-rev03r-ds-rom-do-zero.json"><button slot="activate">INSTALAR SENS DO ZERO</button></esp-web-install-button>
+<esp-web-install-button manifest="manifest-next-rev03r-ds-rom-preservar.json"><button slot="activate">ATUALIZAR — PRESERVAR DADOS</button></esp-web-install-button>
 <div style="margin-top:8px;font-size:.88rem;line-height:1.35">
   <strong>ATUALIZAR — PRESERVAR DADOS:</strong> mantém NVS/identidade do equipamento
   (Epoch, próximo Seq e configurações). Se o gravador apresentar uma opção de apagar
@@ -176,7 +178,7 @@ details.config-group>summary{font-weight:800;color:#176b3a;cursor:pointer}
 
 <section class="card">
 <div class="step">ETAPA 3 — GRAVAR CONFIGURAÇÃO SENS</div><h2>Envie a configuração salva ao ESP32</h2>
-<p class="note">Depois de instalar, selecione a porta do ESP32 para gravar a configuração completa. O equipamento confere os dados relidos da memória antes de confirmar a conclusão.</p>
+<p class="note">Depois de instalar, clique uma vez abaixo e selecione a porta do ESP32. O Installer grava Nome + Serial juntos e, na Rev.15D2.3, envia a configuração completa por uma transação atômica: Básico + Avançado + Customizado 1/2 + Correção 1/2. O firmware só confirma após COMMIT, releitura da NVS e snapshot válido.</p>
 <button id="apply">GRAVAR CONFIGURAÇÃO E CONTINUAR</button>
 <div id="cfgstatus" class="status">Aguardando instalação e conexão com o ESP32.</div>
 </section>
@@ -217,7 +219,7 @@ details.config-group>summary{font-weight:800;color:#176b3a;cursor:pointer}
 </main><footer>SENS Platform • SENS Installer</footer>
 
 <script type="module">
-import {SensImprov} from './sens-improv.js?v=rev04b-nvs-serial';
+import {SensImprov} from './sens-improv.js?v=rev03r-ds-rom';
 
 const $=id=>document.getElementById(id);
 let improv=null, port=null;
@@ -268,10 +270,10 @@ class SensConfigSerial15B {
   async writeLine(line){
     await this.writer.write(new TextEncoder().encode(line+"\n"));
   }
-  async expect(line, accept, timeout=15000){
+  async expect(line, accept, timeout=7000){
     if(this.waiter)throw new Error("Comando serial Rev.15D2.2 anterior ainda em andamento.");
     return await new Promise(async(resolve,reject)=>{
-      const timer=setTimeout(()=>{this.waiter=null;reject(new Error("Tempo esgotado aguardando ACK do comando "+line.split("|")[1]+". O equipamento não confirmou esta etapa; confira firmware e conexão USB."));},timeout);
+      const timer=setTimeout(()=>{this.waiter=null;reject(new Error("Tempo esgotado aguardando ACK serial Rev.15D2.3."));},timeout);
       this.waiter={resolve,reject,onLine:(row)=>{
         if(row.startsWith("SENS15D|ERR|")){clearTimeout(timer);this.waiter=null;reject(new Error(row));return;}
         const v=accept(row); if(v!==undefined){clearTimeout(timer);this.waiter=null;resolve(v);}
@@ -280,7 +282,7 @@ class SensConfigSerial15B {
     });
   }
   async begin(token){
-    return await this.expect(`@SENS15D|BEGIN|${token}`, row=>row===`SENS15D|ACK|BEGIN|${token}|READY`?true:undefined,60000);
+    return await this.expect(`@SENS15D|BEGIN|${token}`, row=>row===`SENS15D|ACK|BEGIN|${token}|READY`?true:undefined);
   }
   chunks(text,max=72){
     const out=[]; let cur=""; const enc=new TextEncoder();
@@ -444,6 +446,13 @@ const CORR_NATIVE = {
   S_DHT22:{label:"DHT22", quantities:["temperature","humidity"]},
   S_DS1:{label:"DS18B20 — sensor 1", quantities:["temperature"]},
   S_DS2:{label:"DS18B20 — sensor 2", quantities:["temperature"]},
+  S_DS3:{label:"DS18B20 — sensor 3", quantities:["temperature"]},
+  S_DS4:{label:"DS18B20 — sensor 4", quantities:["temperature"]},
+  S_DS5:{label:"DS18B20 — sensor 5", quantities:["temperature"]},
+  S_DS6:{label:"DS18B20 — sensor 6", quantities:["temperature"]},
+  S_DS7:{label:"DS18B20 — sensor 7", quantities:["temperature"]},
+  S_DS8:{label:"DS18B20 — sensor 8", quantities:["temperature"]},
+
   S_BMP180:{label:"BMP180", quantities:["temperature","pressure"]},
   S_BME280:{label:"BME280", quantities:["temperature","humidity","pressure"]},
   S_BME680:{label:"BME680", quantities:["temperature","humidity","pressure","gas_resistance"]},
@@ -465,7 +474,8 @@ function enabledCorrectionSensors(){
   const add=(ok,id)=>{if(ok && CORR_NATIVE[id])a.push({id,label:CORR_NATIVE[id].label,quantities:[...CORR_NATIVE[id].quantities]})};
   add($("s_dht22").checked,"S_DHT22");
   const dm=parseInt($("dsMode").value||"0",10);
-  add(dm>=1,"S_DS1"); add(dm>=2,"S_DS2");
+  const dsTotal=dm===3?8:dm;
+  for(let n=1;n<=dsTotal;n++)add(true,"S_DS"+n);
   add($("s_bmp180").checked,"S_BMP180"); add($("s_bme280").checked,"S_BME280");
   add($("s_bme680").checked,"S_BME680"); add($("s_bmp388").checked,"S_BMP388");
   add($("s_bh1750").checked,"S_BH1750"); add($("s_apds").checked,"S_APDS9960");
@@ -592,110 +602,38 @@ function restoreFull(c){
 function clearNewConfig(){localStorage.removeItem("sensInstallerNEXTCONVERSORREV02");location.reload();}
 function fmtKv(x,kind){const o=kvObj(x||"");if(kind==="generic")return String(o.en)!=="1"?"DESATIVADO":`${o.id||"—"} • ${o.model||"—"} • ${o.qty||"—"} ${o.unit||""} • GPIO ${o.gpio||"—"} • fator ${o.factor||"—"}`;if(kind==="corr")return String(o.en)!=="1"?"DESATIVADA":`${o.sid||"—"} • ${o.qty||"—"} • y = ${o.a||1} × x + ${o.b||0} • Aferição ${o.cid||"—"}`;return Object.entries(o).map(([k,v])=>`${k}=${v}`).join(" • ")||"—";}
 function V(id,v){if($(id))$(id).value=v??"";}
-let nextFlowId=1, yfSlots=[], yfValid=true, yfEmptySlotConfigs=[];
-const yfAllSlots=()=>Array.from({length:8},(_,i)=>i);
-const yfRaw=(i,k)=>$("g"+i+"_"+k).value;
-function yfPinsInUse(){
- const used=new Set(yfAllSlots().filter(i=>yfRaw(i,"en")==="1").map(i=>Number(yfRaw(i,"gpio"))));
- if($("s_dht22").checked)used.add(4);
- if(Number($("dsMode").value)>0)used.add(13);
- if($("s_t6613").checked||$("s_gps").checked){used.add(16);used.add(17);}
- if($("s_thermok").checked)[18,5,19].forEach(n=>used.add(n));
- if($("rtcEnabled").checked||["s_bmp180","s_bme280","s_bme680","s_bmp388","s_bh1750","s_apds","s_converter"].some(id=>$(id).checked)||yfAllSlots().some(i=>yfRaw(i,"en")==="1"&&["11","25"].includes(yfRaw(i,"if")))){used.add(21);used.add(22);}
- return used;
-}
-function renderYFInstances(){
- const host=$("yf_instances");host.replaceChildren();
- const enabled=$("s_yfs201").checked;
- const count=Number($("yf_count").value);
- yfAllSlots().forEach(i=>{
-  $("g"+i+"_en").closest(".sensorbox").hidden=yfSlots.includes(i);
-  const cell=$("cfgGeneric"+(i+1));if(cell)cell.previousElementSibling.textContent=yfSlots.includes(i)?"Família YF — "+yfRaw(i,"id"):"Customizado "+(i+1);
- });
- if($("yfPinMap"))$("yfPinMap").textContent=yfSlots.filter(i=>yfRaw(i,"en")==="1").map(i=>"GPIO"+yfRaw(i,"gpio")).join(" / ")||"Desativado";
- if(!enabled)return;
- yfSlots.slice(0,Number.isInteger(count)?count:0).forEach((slot,n)=>{
-  const card=document.createElement("section");card.className="sensorbox yf-instance";
-  const title=document.createElement("h3");title.textContent=`Sensor ${n+1} — ${yfRaw(slot,"id")}`;card.appendChild(title);
-  const grid=document.createElement("div");grid.className="config-grid";card.appendChild(grid);
-  const field=(key,label,type="number",options=null)=>{
-   const wrap=document.createElement("label");wrap.textContent=label;
-   const input=document.createElement(options?"select":"input");input.id=`yf_${slot}_${key}`;
-   if(options)for(const value of options){const o=document.createElement("option");o.value=value;o.textContent=value;input.appendChild(o);}
-   else {input.type=type;input.step=key==="ppu"?"any":"1";}
-   input.value=yfRaw(slot,key);
-   if(key==="gpio"){input.min="0";input.max="39";}
-   if(key==="ppu")input.min="0.001";
-   if(key==="pwin"){input.min="100";input.max="65535";}
-   input.addEventListener("input",()=>{V(`g${slot}_${key}`,input.value);refreshCorrectionMenus();});
-   input.addEventListener("change",()=>{
-    V(`g${slot}_${key}`,input.value);
-    if(key==="model"){const ppu=input.value==="YF-B7"?"660":"450";V(`g${slot}_ppu`,ppu);V(`yf_${slot}_ppu`,ppu);}
-    refreshCorrectionMenus();
-   });
-   wrap.appendChild(input);grid.appendChild(wrap);
-  };
-  field("model","Modelo desta unidade","text",["YF-B7","YF-S201"]);
-  field("gpio","GPIO de pulsos");field("ppu","Calibração — pulsos por litro");field("pwin","Janela de leitura (ms)");
-  const note=document.createElement("p");note.className="smallnote";note.textContent=`ID permanente: ${yfRaw(slot,"id")}. Saída: ${yfRaw(slot,"qty")} (${yfRaw(slot,"unit")}). Altere o rótulo científico na Platform; mantenha o ID para preservar a série.`;card.appendChild(note);
-  host.appendChild(card);
- });
- const dormant=yfSlots.slice(Number.isInteger(count)?count:0);
- if(dormant.length){
-  const details=document.createElement("details"),summary=document.createElement("summary");summary.textContent=`Unidades desativadas preservadas (${dormant.length})`;details.appendChild(summary);
-  for(const slot of dormant){
-   const row=document.createElement("p");row.textContent=`${yfRaw(slot,"id")} — ${yfRaw(slot,"model")} — GPIO${yfRaw(slot,"gpio")} `;
-   const button=document.createElement("button");button.type="button";button.dataset.releaseSlot=slot;button.textContent="REMOVER CONFIGURAÇÃO";
-   button.onclick=()=>{
-    if(!confirm(`Remover a configuração de ${yfRaw(slot,"id")}? Os parâmetros locais serão descartados e a capacidade ficará livre. O histórico na Platform permanece. Para manter os parâmetros, cancele.`))return;
-    yfSlots=yfSlots.filter(i=>i!==slot);
-    for(const [k,v]of Object.entries(kvObj(yfEmptySlotConfigs[slot])))V(`g${slot}_${k}`,v);
-    $("g"+slot+"_if").dispatchEvent(new Event("change"));renderYFInstances();refreshCorrectionMenus();
-   };
-   row.appendChild(button);details.appendChild(row);
-  }
-  host.appendChild(details);
- }
-}
+let nextFlowId=1;
 function applyYFProfile(){
- const on=$("s_yfs201").checked, count=Number($("yf_count").value);
- yfValid=!on||(Number.isInteger(count)&&count>=1&&count<=8);
- if(!yfValid){setStatus("yf_status","Escolha uma quantidade inteira de 1 a 8.","err");return false;}
- const needed=on?Math.max(0,count-yfSlots.length):0;
- const free=yfAllSlots().filter(i=>!yfSlots.includes(i)&&yfRaw(i,"en")==="0"&&!yfRaw(i,"model").trim());
- if(free.length<needed){yfValid=false;setStatus("yf_status","Não há capacidade livre para essa quantidade sem substituir outro sensor. Reduza a quantidade ou revise os sensores instalados.","err");return false;}
- const ids=new Set(yfAllSlots().map(i=>yfRaw(i,"id"))), used=yfPinsInUse();
- for(const slot of free.slice(0,needed)){
-  let id;do{id="VAZAO_"+String(nextFlowId++).padStart(2,"0");}while(ids.has(id));ids.add(id);
-  const pin=[23,25,26,27,32,33,13,14,4,16,17,18,19,21,22].find(p=>!used.has(p));if(pin!==undefined)used.add(pin);
-  const model=$("yf_model").value;
-  const vals={en:"0",instance:"1",id,model,mfr:"Não informado",if:"24",gpio:pin??"-1",qty:"vazao",unit:"L/min",factor:"60",ppu:model==="YF-B7"?"660":"450",pwin:"1000",total:"0",conv:"0"};
-  for(const [k,v]of Object.entries(vals))V(`g${slot}_${k}`,v);
-  yfSlots.push(slot);$("g"+slot+"_if").dispatchEvent(new Event("change"));
+ const count=Number($("yf_count").value), model=$("yf_model").value;
+ const ppu=Number($("yf_ppu").value), win=Number($("yf_pwin").value);
+ if(!Number.isInteger(count)||count<1||count>8||!Number.isFinite(ppu)||ppu<=0||!Number.isInteger(win)||win<100||win>65535){setStatus("yf_status","Confira quantidade, pulsos/L e janela.","err");return;}
+ const active=Array.from({length:8},(_,i)=>i).filter(i=>$("g"+i+"_en").value==="1"&&$("g"+i+"_model").value===model&&$("g"+i+"_if").value==="24");
+ if(active.length>=count){setStatus("yf_status",`Já existem ${active.length} instâncias de ${model}. Desative manualmente as que deseja remover; os IDs serão preservados.`);return;}
+ // A slot with an old ID keeps its configuration until explicitly edited.
+ const free=Array.from({length:8},(_,i)=>i).filter(i=>$("g"+i+"_en").value==="0"&&!$("g"+i+"_model").value.trim());
+ if(free.length<count-active.length){setStatus("yf_status","Slots vazios insuficientes. Há 8 slots nesta versão; revise os customizados existentes.","err");return;}
+ const pins=[23,25,26,27,32,33,13,14];
+ const used=new Set(Array.from({length:8},(_,i)=>i).filter(i=>$("g"+i+"_en").value==="1").map(i=>Number($("g"+i+"_gpio").value)));
+ const ids=new Set(Array.from({length:8},(_,i)=>$("g"+i+"_id").value));
+ for(const i of free.slice(0,count-active.length)){
+   let id;do{id="VAZAO_"+String(nextFlowId++).padStart(2,"0");}while(ids.has(id));ids.add(id);
+   const pin=pins.find(p=>!used.has(p));if(pin!==undefined)used.add(pin);
+   const vals={en:"1",instance:"1",id,model,mfr:"Não informado",if:"24",gpio:pin??"-1",qty:"vazao",unit:"L/min",factor:"60",ppu:String(ppu),pwin:String(win),total:"0",conv:"0"};
+   for(const [k,v] of Object.entries(vals))V(`g${i}_${k}`,v);
+   $("g"+i+"_if").dispatchEvent(new Event("change"));
  }
- yfSlots.forEach((slot,n)=>V(`g${slot}_en`,on&&n<count?"1":"0"));
- renderYFInstances();refreshCorrectionMenus();
- setStatus("yf_status",on?`${count} ${count===1?"sensor configurado":"sensores configurados"}. Confira os GPIOs e guarde a configuração.`:"Família YF desativada; IDs e parâmetros preservados.","ok");
- return true;
+ refreshCorrectionMenus();setStatus("yf_status",`${count} instâncias de ${model} preparadas. Confira GPIO e calibração de cada unidade em SENSORES CUSTOMIZADOS e guarde a configuração.`,"ok");
 }
 function syncYFFromSaved(c){
  nextFlowId=Math.max(1,Number(c.nextFlowId)||1);
  for(let i=0;i<8;i++){const g=kvObj(c.generics?.[i]||"");const n=String(g.id||"").match(/^VAZAO_(\d+)$/);if(n)nextFlowId=Math.max(nextFlowId,Number(n[1])+1);}
- // Only migrate the catalogue-created YF entries; freely configured YF customs
- // with other IDs keep their original form and configuration.
- const owned=Array.isArray(c.yfSlots)?c.yfSlots:yfAllSlots().filter(i=>{const g=kvObj(c.generics?.[i]||"");return g.if==="24"&&["YF-B7","YF-S201"].includes(g.model)&&(/^(VAZAO_\d+|S_YF201)$/.test(g.id||""));});
- yfSlots=[...new Set(owned)].filter(i=>Number.isInteger(i)&&i>=0&&i<8&&yfRaw(i,"if")==="24"&&["YF-B7","YF-S201"].includes(yfRaw(i,"model")));
- // Retain active-before-inactive order when migrating a previous configuration.
- if(!Array.isArray(c.yfSlots))yfSlots.sort((a,b)=>Number(yfRaw(b,"en"))-Number(yfRaw(a,"en")));
- const active=yfSlots.filter(i=>yfRaw(i,"en")==="1");
- $("s_yfs201").checked=c.yfEnabled!==undefined?!!c.yfEnabled:active.length>0;
- V("yf_count",c.yfCount||active.length||1);V("yf_model",c.yfDefaultModel|| (yfSlots.length?yfRaw(yfSlots[0],"model"):"YF-B7"));
- yfValid=true;renderYFInstances();refreshYFCatalogUI();
+ const flows=(c.generics||[]).map(kvObj).filter(g=>g.en==="1"&&g.if==="24"&&/^YF-/.test(g.model||""));
+ if(flows.length){$("s_yfs201").checked=true;V("yf_model",flows[0].model);V("yf_count",flows.length);V("yf_ppu",flows[0].ppu);V("yf_pwin",flows[0].pwin);}
 }
 function refreshYFCatalogUI(){const box=$("yf_cfg");if(box)box.style.display=$("s_yfs201")?.checked?"block":"none";}
-$("s_yfs201").addEventListener("change",()=>{applyYFProfile();refreshYFCatalogUI();});
-$("yf_count").addEventListener("input",applyYFProfile);
-$("yf_count").addEventListener("change",applyYFProfile);
+$("s_yfs201")?.addEventListener("change",refreshYFCatalogUI);
+$("yf_model")?.addEventListener("change",()=>V("yf_ppu",$("yf_model").value==="YF-B7"?"660":"450"));
+$("yf_create").onclick=applyYFProfile;
 
 function validateInstanceResources(){
  try{
@@ -728,12 +666,11 @@ function validateInstanceResources(){
 }
 
 function saveConfig(){
-  if(!applyYFProfile()){setStatus("saved",$("yf_status").textContent,"err");return false;}
   applyConverterProfile();
   const name=$("name").value.trim(),serial=$("serial").value.trim();
   if(!name||!serial){alert("Preencha Nome e Serial.");return false;}
   if(!validSerial(serial)){alert("No Serial use apenas letras, números e hífen.");return false;}
-  const c={nextFlowId,yfSlots:[...yfSlots],yfEnabled:$("s_yfs201").checked,yfCount:Number($("yf_count").value),yfDefaultModel:$("yf_model").value,name,serial,project:$("project").value.trim(),location:$("location").value.trim(),platformUrl:$("platformUrl").value.trim(),
+  const c={nextFlowId,name,serial,project:$("project").value.trim(),location:$("location").value.trim(),platformUrl:$("platformUrl").value.trim(),
     role:$("role").value,sendSec:parseInt($("sendSec").value,10),sync:$("syncPlatform").checked,
     sensors:{dht22:$("s_dht22").checked,t6613:$("s_t6613").checked,converter:$("s_converter").checked,convModel:$("conv_model").value.trim(),convQty:$("conv_qty").value,convUnit:$("conv_unit").value.trim(),uartModel:$("uart_model").value.trim(),uartQty:$("uart_qty").value.trim(),uartUnit:$("uart_unit").value.trim(),uartRx:$("uart_rx").value,uartTx:$("uart_tx").value,uartBaud:$("uart_baud").value,uartProto:$("uart_proto").value.trim(),bmp180:$("s_bmp180").checked,
     bme280:$("s_bme280").checked,bme680:$("s_bme680").checked,bmp388:$("s_bmp388").checked,
@@ -1154,8 +1091,8 @@ $("apply").onclick=async()=>{
     setStatus("cfgstatus","Improv pronto. Iniciando gravação com confirmação por leitura...");
 
     const capability=kvObj((await improv.sensFullStatus())[0]||"");
+    if(capability.dsSlots!=="8" || capability.dsRom!=="1")throw new Error("Instale o firmware Rev.03R DS-ROM na Etapa 2: ele deve confirmar os 8 DS com identidade por ROM antes da configuração.");
     if(capability.instanceSlots!=="8")throw new Error("Instale o firmware Rev.03R na Etapa 2: o firmware conectado não confirmou as 8 instâncias. Nenhuma configuração foi gravada.");
-    if(capability.configStorage!=="packed-v2")throw new Error("Instale o firmware Rev.03R na Etapa 2 usando PRESERVAR DADOS. O firmware conectado ainda usa o armazenamento anterior; nenhuma configuração foi gravada.");
     let clockCapability;
     try{clockCapability=kvObj(await improv.sensClockStatus());}catch(e){throw new Error("Este firmware não confirmou suporte RTC. Instale a Rev.03R na Etapa 2 antes de gravar esta configuração.");}
     if(!("enabled" in clockCapability))throw new Error("Resposta RTC incompleta. Instale a Rev.03R na Etapa 2 antes de gravar esta configuração.");
@@ -1351,13 +1288,12 @@ $("monitorClear").onclick=()=>{
 };
 
 buildV28();
-yfEmptySlotConfigs=yfAllSlots().map(genForm);
 for(let i=0;i<8;i++)configureGenericLayeredUI(i);
 const c=getSaved();
 
 if(c){restoreFull(c);setStatus("saved",`Guardado nesta versão do Installer:\nNome: ${c.name}\nSerial: ${c.serial}\nPapel: ${c.role||"NORMAL"}\nIntervalo: ${c.sendSec||60}s`,"ok");}
 else{setStatus("saved","Nova versão: nenhum preenchimento anterior foi importado. Configure este equipamento e clique em GUARDAR CONFIGURAÇÃO.");}
-renderYFInstances();refreshYFCatalogUI();
+refreshYFCatalogUI();
 Array.from({length:8},(_,i)=>i).forEach(i=>$(`g${i}_if`).dispatchEvent(new Event("change")));
 // Rev.03K: estado visual não é persistente. Todo F5 inicia os grupos recolhidos.
 document.querySelectorAll("details").forEach(d=>{ d.open=false; });

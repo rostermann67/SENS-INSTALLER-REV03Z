@@ -1,0 +1,4 @@
+Firmware Rev.03R DS-ROM / Installer Rev.04A.
+Leia o README.md da entrega para instalar do zero e atribuir DS #1 a interna e DS #2 a externa.
+Publique esta pasta inteira, com os manifestos e binarios novos.
+AUTO suporta ate 8 DS no GPIO13 com ROM persistente.
