@@ -1,0 +1,7 @@
+Destilador Solar — Installer Rev.04C / Firmware Rev.03S DS-ROM NVS-SERIAL.
+Publique toda esta pasta, preservando os caminhos. Recarregue e confira as versoes no cabecalho.
+Para corrigir o timeout da Etapa 3, instale ATUALIZAR — PRESERVAR DADOS antes de repetir a configuracao.
+DO ZERO nao e necessario para esta correcao.
+O novo firmware confirma configStorage=packed-v2;dsSlots=8;dsRom=1.
+Guarde a configuracao desejada, execute Etapa 3, espere COMMIT e snapshot, configure Wi-Fi e reinicie.
+Pode manter os dois DS conectados e identificar interna/externa depois, aquecendo uma sonda de cada vez.
